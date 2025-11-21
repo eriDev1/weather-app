@@ -9,8 +9,15 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
+  transformIgnorePatterns: [
+    'node_modules/(?!(msw|@mswjs|until-async)/)',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^msw/node$': '<rootDir>/node_modules/msw/lib/node/index.js',
+    '^@mswjs/interceptors/ClientRequest$': '<rootDir>/node_modules/@mswjs/interceptors/lib/node/interceptors/ClientRequest/index.js',
+    '^@mswjs/interceptors/XMLHttpRequest$': '<rootDir>/node_modules/@mswjs/interceptors/lib/node/interceptors/XMLHttpRequest/index.js',
+    '^@mswjs/interceptors/fetch$': '<rootDir>/node_modules/@mswjs/interceptors/lib/node/interceptors/fetch/index.js',
   },
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
