@@ -9,10 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 export default function Home() {
   const [currentCity, setCurrentCity] = useState('')
 
-  const handleCityChange = (city: string) => {
-    setCurrentCity(city)
-  }
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       <div className="w-full max-w-6xl space-y-6">
@@ -28,9 +24,11 @@ export default function Home() {
           <ThemeToggle />
         </div>
 
-        <div className="flex justify-center">
-          <WeatherSearchWrapper onCityChange={handleCityChange} />
-        </div>
+        {!currentCity && (
+          <div className="flex justify-center">
+            <WeatherSearch onWeatherChange={setCurrentCity} />
+          </div>
+        )}
 
         {currentCity && (
           <Tabs defaultValue="current" className="w-full">
@@ -40,7 +38,7 @@ export default function Home() {
             </TabsList>
             <TabsContent value="current" className="mt-6">
               <div className="flex justify-center">
-                <WeatherSearchWrapper onCityChange={handleCityChange} />
+                <WeatherSearch onWeatherChange={setCurrentCity} />
               </div>
             </TabsContent>
             <TabsContent value="forecast" className="mt-6">
@@ -57,8 +55,4 @@ export default function Home() {
       </div>
     </main>
   )
-}
-
-function WeatherSearchWrapper({ onCityChange }: { onCityChange: (city: string) => void }) {
-  return <WeatherSearch onWeatherChange={(city) => onCityChange(city)} />
 }
