@@ -153,8 +153,11 @@ describe('WeatherSearch Component', () => {
     await user.click(button)
     
     await waitFor(() => {
-      expect(requestUrl).toBeTruthy()
-      expect(requestUrl).toContain('q=Tokyo')
+      const weatherCard = screen.queryByTestId('weather-card')
+      expect(weatherCard || requestUrl).toBeTruthy()
     }, { timeout: 3000 })
+    
+    expect(requestUrl).toContain('q=Tokyo')
+    expect(requestUrl).toContain('api.weatherapi.com')
   })
 })
