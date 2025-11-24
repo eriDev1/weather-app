@@ -52,20 +52,21 @@ describe('useGeolocation Hook', () => {
     }
 
     mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
-      error(mockError)
+      setTimeout(() => error(mockError), 0)
     })
 
     const { result } = renderHook(() => useGeolocation())
 
-    await waitFor(async () => {
-      try {
-        await result.current.getCurrentPosition()
-      } catch (err) {
-        expect(err).toBeInstanceOf(Error)
-      }
+    try {
+      await result.current.getCurrentPosition()
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error)
+    }
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('Location permission denied')
     })
 
-    expect(result.current.error).toBe('Location permission denied')
     expect(result.current.loading).toBe(false)
   })
 
@@ -79,20 +80,20 @@ describe('useGeolocation Hook', () => {
     }
 
     mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
-      error(mockError)
+      setTimeout(() => error(mockError), 0)
     })
 
     const { result } = renderHook(() => useGeolocation())
 
-    await waitFor(async () => {
-      try {
-        await result.current.getCurrentPosition()
-      } catch (err) {
-        expect(err).toBeInstanceOf(Error)
-      }
-    })
+    try {
+      await result.current.getCurrentPosition()
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error)
+    }
 
-    expect(result.current.error).toBe('Location information unavailable')
+    await waitFor(() => {
+      expect(result.current.error).toBe('Location information unavailable')
+    })
   })
 
   test('handles timeout error', async () => {
@@ -105,45 +106,43 @@ describe('useGeolocation Hook', () => {
     }
 
     mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
-      error(mockError)
+      setTimeout(() => error(mockError), 0)
     })
 
     const { result } = renderHook(() => useGeolocation())
 
-    await waitFor(async () => {
-      try {
-        await result.current.getCurrentPosition()
-      } catch (err) {
-        expect(err).toBeInstanceOf(Error)
-      }
-    })
+    try {
+      await result.current.getCurrentPosition()
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error)
+    }
 
-    expect(result.current.error).toBe('Location request timeout')
+    await waitFor(() => {
+      expect(result.current.error).toBe('Location request timeout')
+    })
   })
 
   test('sets loading state during geolocation request', async () => {
-    let resolvePosition: ((value: any) => void) | null = null
-
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
-      resolvePosition = () => {
+      setTimeout(() => {
         success({
           coords: {
             latitude: 51.5074,
             longitude: -0.1278,
           },
         })
-      }
+      }, 10)
     })
 
     const { result } = renderHook(() => useGeolocation())
 
     const promise = result.current.getCurrentPosition()
 
-    expect(result.current.loading).toBe(true)
+    await waitFor(() => {
+      expect(result.current.loading).toBe(true)
+    }, { timeout: 100 })
 
-    if (resolvePosition) {
-      resolvePosition(null)
-    }
+    await promise
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)

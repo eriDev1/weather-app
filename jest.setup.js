@@ -1,4 +1,31 @@
 import '@testing-library/jest-dom'
+import { TextEncoder, TextDecoder } from 'util'
+
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+
+try {
+  const { ReadableStream, WritableStream, TransformStream } = require('stream/web')
+  if (typeof global.ReadableStream === 'undefined') {
+    global.ReadableStream = ReadableStream
+  }
+  if (typeof global.WritableStream === 'undefined') {
+    global.WritableStream = WritableStream
+  }
+  if (typeof global.TransformStream === 'undefined') {
+    global.TransformStream = TransformStream
+  }
+} catch {
+  if (typeof global.ReadableStream === 'undefined') {
+    global.ReadableStream = class ReadableStream {}
+  }
+  if (typeof global.WritableStream === 'undefined') {
+    global.WritableStream = class WritableStream {}
+  }
+  if (typeof global.TransformStream === 'undefined') {
+    global.TransformStream = class TransformStream {}
+  }
+}
 
 try {
   const { fetch, Request, Response, Headers } = require('undici')
@@ -47,3 +74,15 @@ Object.defineProperty(global.navigator, 'geolocation', {
   value: mockGeolocation,
   writable: true,
 })
+
+if (typeof global.BroadcastChannel === 'undefined') {
+  global.BroadcastChannel = class BroadcastChannel {
+    constructor(name) {
+      this.name = name
+    }
+    postMessage() {}
+    close() {}
+    addEventListener() {}
+    removeEventListener() {}
+  }
+}

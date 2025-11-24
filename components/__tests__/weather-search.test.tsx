@@ -4,9 +4,11 @@ import { WeatherSearch } from '../weather-search'
 import { server } from '@/lib/mocks/server'
 import { http, HttpResponse } from 'msw'
 
-// Setup mock server before all tests
 beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  localStorage.clear()
+})
 afterAll(() => server.close())
 
 describe('WeatherSearch Component', () => {
@@ -113,19 +115,30 @@ describe('WeatherSearch Component', () => {
     })
   })
 
-  // Test 8: API request contains correct parameters
   test('sends correct city parameter in API request', async () => {
+    localStorage.clear()
     let requestUrl = ''
     
     server.use(
-      http.get('https://api.openweathermap.org/data/2.5/weather', ({ request }) => {
+      http.get('https://api.weatherapi.com/v1/current.json', ({ request }) => {
         requestUrl = request.url
         return HttpResponse.json({
-          name: 'Tokyo',
-          main: { temp: 25, feels_like: 23, humidity: 70, pressure: 1015 },
-          weather: [{ id: 801, main: 'Clouds', description: 'few clouds', icon: '02d' }],
-          wind: { speed: 3.5 },
-          sys: { country: 'JP' },
+          location: {
+            name: 'Tokyo',
+            country: 'JP',
+          },
+          current: {
+            temp_c: 25,
+            feelslike_c: 23,
+            humidity: 70,
+            pressure_mb: 1015,
+            condition: {
+              text: 'few clouds',
+              icon: '//cdn.weatherapi.com/weather/64x64/day/116.png',
+              code: 1003,
+            },
+            wind_kph: 12.6,
+          },
         })
       })
     )
@@ -140,7 +153,8 @@ describe('WeatherSearch Component', () => {
     await user.click(button)
     
     await waitFor(() => {
+      expect(requestUrl).toBeTruthy()
       expect(requestUrl).toContain('q=Tokyo')
-    })
+    }, { timeout: 3000 })
   })
 })

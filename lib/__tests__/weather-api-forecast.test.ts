@@ -26,10 +26,10 @@ describe('Weather Forecast API', () => {
 
   test('handles forecast API error for invalid city', async () => {
     server.use(
-      http.get('https://api.openweathermap.org/data/2.5/forecast', () => {
+      http.get('https://api.weatherapi.com/v1/forecast.json', () => {
         return HttpResponse.json(
-          { message: 'City not found' },
-          { status: 404 }
+          { error: { message: 'City not found', code: 1006 } },
+          { status: 400 }
         )
       })
     )
