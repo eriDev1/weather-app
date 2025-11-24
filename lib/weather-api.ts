@@ -1,3 +1,5 @@
+const API_KEY = 'f1dad3550f9d44918b8183253252411'
+
 export interface WeatherData {
   name: string
   main: {
@@ -20,31 +22,45 @@ export interface WeatherData {
   }
 }
 
-export interface ForecastItem {
-  dt: number
-  main: {
-    temp: number
-    temp_min: number
-    temp_max: number
-    humidity: number
-  }
-  weather: Array<{
-    id: number
-    main: string
-    description: string
-    icon: string
-  }>
-  wind: {
-    speed: number
-  }
-  dt_txt: string
-}
-
-export interface ForecastResponse {
-  list: ForecastItem[]
-  city: {
+interface WeatherAPIResponse {
+  location: {
     name: string
     country: string
+  }
+  current: {
+    temp_c: number
+    feelslike_c: number
+    humidity: number
+    pressure_mb: number
+    condition: {
+      text: string
+      icon: string
+      code: number
+    }
+    wind_kph: number
+  }
+}
+
+interface ForecastAPIResponse {
+  location: {
+    name: string
+    country: string
+  }
+  forecast: {
+    forecastday: Array<{
+      date: string
+      day: {
+        maxtemp_c: number
+        mintemp_c: number
+        avghumidity: number
+        condition: {
+          text: string
+          icon: string
+          code: number
+        }
+        maxwind_kph: number
+      }
+    }>
   }
 }
 
@@ -59,60 +75,59 @@ export interface DailyForecast {
 }
 
 export async function getWeatherByCity(city: string): Promise<WeatherData> {
-  const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || 'demo_key'
   const response = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+    `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${city}&aqi=no`
   )
 
   if (!response.ok) {
     throw new Error('Failed to fetch weather data')
   }
 
-  return response.json()
+  const data: WeatherAPIResponse = await response.json()
+
+  return {
+    name: data.location.name,
+    main: {
+      temp: data.current.temp_c,
+      feels_like: data.current.feelslike_c,
+      humidity: data.current.humidity,
+      pressure: data.current.pressure_mb,
+    },
+    weather: [
+      {
+        id: data.current.condition.code,
+        main: data.current.condition.text.split(' ')[0],
+        description: data.current.condition.text,
+        icon: data.current.condition.icon.replace('//cdn.weatherapi.com', ''),
+      },
+    ],
+    wind: {
+      speed: data.current.wind_kph / 3.6,
+    },
+    sys: {
+      country: data.location.country,
+    },
+  }
 }
 
 export async function getWeatherForecast(city: string): Promise<DailyForecast[]> {
-  const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || 'demo_key'
   const response = await fetch(
-    `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`
+    `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=5&aqi=no&alerts=no`
   )
 
   if (!response.ok) {
     throw new Error('Failed to fetch forecast data')
   }
 
-  const data: ForecastResponse = await response.json()
-  
-  const groupedByDate = new Map<string, ForecastItem[]>()
-  
-  data.list.forEach((item) => {
-    const date = new Date(item.dt * 1000).toISOString().split('T')[0]
-    if (!groupedByDate.has(date)) {
-      groupedByDate.set(date, [])
-    }
-    groupedByDate.get(date)!.push(item)
-  })
+  const data: ForecastAPIResponse = await response.json()
 
-  const dailyForecasts: DailyForecast[] = []
-  
-  groupedByDate.forEach((items, date) => {
-    const tempMax = Math.max(...items.map(item => item.main.temp_max))
-    const tempMin = Math.min(...items.map(item => item.main.temp_min))
-    const middayItem = items.find(item => {
-      const hour = new Date(item.dt * 1000).getHours()
-      return hour >= 12 && hour <= 14
-    }) || items[Math.floor(items.length / 2)]
-    
-    dailyForecasts.push({
-      date,
-      tempMax: Math.round(tempMax),
-      tempMin: Math.round(tempMin),
-      icon: middayItem.weather[0].icon,
-      description: middayItem.weather[0].description,
-      humidity: middayItem.main.humidity,
-      windSpeed: middayItem.wind.speed,
-    })
-  })
-
-  return dailyForecasts.slice(0, 5)
+  return data.forecast.forecastday.map((day) => ({
+    date: day.date,
+    tempMax: Math.round(day.day.maxtemp_c),
+    tempMin: Math.round(day.day.mintemp_c),
+    icon: day.day.condition.icon.replace('//cdn.weatherapi.com', ''),
+    description: day.day.condition.text,
+    humidity: day.day.avghumidity,
+    windSpeed: day.day.maxwind_kph / 3.6,
+  }))
 }

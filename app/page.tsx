@@ -15,8 +15,8 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              Weather App
-            </h1>
+          Weather App
+        </h1>
             <p className="text-muted-foreground mt-2">
               Search for current weather and forecast
             </p>

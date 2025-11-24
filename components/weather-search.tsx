@@ -44,15 +44,38 @@ export function WeatherSearch(props: WeatherSearchProps = {}) {
       const position = await getCurrentPosition()
       
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${position.latitude}&lon=${position.longitude}&appid=${process.env.NEXT_PUBLIC_WEATHER_API_KEY || 'demo_key'}&units=metric`
+        `https://api.weatherapi.com/v1/current.json?key=f1dad3550f9d44918b8183253252411&q=${position.latitude},${position.longitude}&aqi=no`
       )
 
       if (response.ok) {
         const data = await response.json()
-        setCity(data.name)
-        setWeather(data)
+        const weatherData = {
+          name: data.location.name,
+          main: {
+            temp: data.current.temp_c,
+            feels_like: data.current.feelslike_c,
+            humidity: data.current.humidity,
+            pressure: data.current.pressure_mb,
+          },
+          weather: [
+            {
+              id: data.current.condition.code,
+              main: data.current.condition.text.split(' ')[0],
+              description: data.current.condition.text,
+              icon: data.current.condition.icon.replace('//cdn.weatherapi.com', ''),
+            },
+          ],
+          wind: {
+            speed: data.current.wind_kph / 3.6,
+          },
+          sys: {
+            country: data.location.country,
+          },
+        }
+        setCity(data.location.name)
+        setWeather(weatherData)
         setError(null)
-        onWeatherChange?.(data.name)
+        onWeatherChange?.(data.location.name)
       }
     } catch (err) {
       setError('Could not get location. Please enter city manually.')

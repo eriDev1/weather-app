@@ -1,102 +1,94 @@
 import { http, HttpResponse } from 'msw'
 
 export const handlers = [
-  http.get('https://api.openweathermap.org/data/2.5/weather', ({ request }) => {
+  http.get('https://api.weatherapi.com/v1/current.json', ({ request }) => {
     const url = new URL(request.url)
-    const city = url.searchParams.get('q')
+    const query = url.searchParams.get('q')
     
-    if (!city) {
+    if (!query) {
       return HttpResponse.json(
-        { message: 'City name is required' },
+        { error: { message: 'City name is required' } },
         { status: 400 }
       )
     }
 
-    if (city.toLowerCase() === 'invalidcity') {
+    if (query.toLowerCase() === 'invalidcity') {
       return HttpResponse.json(
-        { message: 'City not found' },
-        { status: 404 }
+        { error: { message: 'City not found', code: 1006 } },
+        { status: 400 }
       )
     }
 
     return HttpResponse.json({
-      name: city,
-      main: {
-        temp: 20,
-        feels_like: 18,
-        humidity: 65,
-        pressure: 1013,
-      },
-      weather: [
-        {
-          id: 800,
-          main: 'Clear',
-          description: 'clear sky',
-          icon: '01d',
-        },
-      ],
-      wind: {
-        speed: 5.5,
-      },
-      sys: {
+      location: {
+        name: query.includes(',') ? 'Current Location' : query,
         country: 'US',
+        lat: query.includes(',') ? parseFloat(query.split(',')[0]) : 0,
+        lon: query.includes(',') ? parseFloat(query.split(',')[1]) : 0,
+      },
+      current: {
+        temp_c: 20,
+        feelslike_c: 18,
+        humidity: 65,
+        pressure_mb: 1013,
+        condition: {
+          text: 'clear sky',
+          icon: '//cdn.weatherapi.com/weather/64x64/day/113.png',
+          code: 1000,
+        },
+        wind_kph: 20,
       },
     })
   }),
 
-  http.get('https://api.openweathermap.org/data/2.5/forecast', ({ request }) => {
+  http.get('https://api.weatherapi.com/v1/forecast.json', ({ request }) => {
     const url = new URL(request.url)
     const city = url.searchParams.get('q')
     
     if (!city) {
       return HttpResponse.json(
-        { message: 'City name is required' },
+        { error: { message: 'City name is required' } },
         { status: 400 }
       )
     }
 
     if (city.toLowerCase() === 'invalidcity') {
       return HttpResponse.json(
-        { message: 'City not found' },
-        { status: 404 }
+        { error: { message: 'City not found', code: 1006 } },
+        { status: 400 }
       )
     }
 
     const baseDate = new Date()
-    const list = []
+    const forecastday = []
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 5; i++) {
       const date = new Date(baseDate)
-      date.setHours(date.getHours() + i * 3)
+      date.setDate(date.getDate() + i)
       
-      list.push({
-        dt: Math.floor(date.getTime() / 1000),
-        main: {
-          temp: 20 + Math.sin(i) * 5,
-          temp_min: 15 + Math.sin(i) * 3,
-          temp_max: 25 + Math.sin(i) * 7,
-          humidity: 65 + i % 10,
-        },
-        weather: [
-          {
-            id: 800 + (i % 4) * 100,
-            main: ['Clear', 'Clouds', 'Rain', 'Clear'][i % 4],
-            description: ['clear sky', 'few clouds', 'light rain', 'clear sky'][i % 4],
-            icon: ['01d', '02d', '10d', '01d'][i % 4],
+      forecastday.push({
+        date: date.toISOString().split('T')[0],
+        day: {
+          maxtemp_c: 25 + Math.sin(i) * 5,
+          mintemp_c: 15 + Math.sin(i) * 3,
+          avghumidity: 65 + (i % 10),
+          condition: {
+            text: ['clear sky', 'few clouds', 'light rain', 'clear sky', 'partly cloudy'][i % 5],
+            icon: '//cdn.weatherapi.com/weather/64x64/day/113.png',
+            code: 1000 + (i % 4) * 100,
           },
-        ],
-        wind: {
-          speed: 5.5 + (i % 3),
+          maxwind_kph: 20 + (i % 3) * 5,
         },
-        dt_txt: date.toISOString(),
       })
     }
 
     return HttpResponse.json({
-      list,
-      city: {
+      location: {
         name: city,
         country: 'US',
+      },
+      forecast: {
+        forecastday,
       },
     })
   }),
